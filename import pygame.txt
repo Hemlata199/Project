@@ -1,0 +1,139 @@
+import pygame
+import random
+import math
+
+pygame.init()
+
+# Screen
+WIDTH = 800
+HEIGHT = 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("AI Drone Flight Simulation")
+
+# Colors
+BLACK = (0,0,0)
+RED = (255,0,0)
+GREEN = (0,200,0)
+BLUE = (0,0,255)
+
+# Font
+font = pygame.font.SysFont(None, 28)
+bigfont = pygame.font.SysFont(None, 40)
+
+# Load Images
+background = pygame.image.load("assets/sky.png")
+background = pygame.transform.scale(background,(800,600))
+
+drone_img = pygame.image.load("assets/drone.png")
+drone_img = pygame.transform.scale(drone_img,(50,50))
+
+obstacle_img = pygame.image.load("assets/obstacle.png")
+obstacle_img = pygame.transform.scale(obstacle_img,(80,80))
+
+# Drone
+drone_x = 100
+drone_y = 100
+speed = 4
+
+# Battery
+battery = 100
+
+# Weather
+weather_conditions = ["Clear", "Windy", "Rain"]
+weather = random.choice(weather_conditions)
+
+# Destination
+dest_x = 700
+dest_y = 500
+
+# Obstacle
+obs_x = 350
+obs_y = 250
+
+clock = pygame.time.Clock()
+
+running = True
+delivery_complete = False
+
+while running:
+
+    screen.blit(background,(0,0))
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    keys = pygame.key.get_pressed()
+
+    # Weather AI decision
+    if weather == "Clear":
+        current_speed = speed
+    else:
+        current_speed = 0
+
+    # Drone movement
+    if keys[pygame.K_LEFT]:
+        drone_x -= current_speed
+    if keys[pygame.K_RIGHT]:
+        drone_x += current_speed
+    if keys[pygame.K_UP]:
+        drone_y -= current_speed
+    if keys[pygame.K_DOWN]:
+        drone_y += current_speed
+
+    # Battery reduction
+    if battery > 0 and current_speed > 0:
+        battery -= 0.02
+
+    # Obstacle collision
+    drone_rect = pygame.Rect(drone_x,drone_y,50,50)
+    obstacle_rect = pygame.Rect(obs_x,obs_y,80,80)
+
+    if drone_rect.colliderect(obstacle_rect):
+        current_speed = 0
+        warning = font.render("Obstacle detected!", True, RED)
+        screen.blit(warning,(10,160))
+
+    # Draw objects
+    screen.blit(drone_img,(drone_x,drone_y))
+    screen.blit(obstacle_img,(obs_x,obs_y))
+    pygame.draw.circle(screen,GREEN,(dest_x,dest_y),20)
+
+    # Distance check
+    distance = math.sqrt((drone_x-dest_x)**2 + (drone_y-dest_y)**2)
+
+    if distance < 30:
+        delivery_complete = True
+
+    # Display info
+    battery_text = font.render("Battery: " + str(int(battery)) + "%", True, BLACK)
+    screen.blit(battery_text,(10,10))
+
+    weather_text = font.render("Weather: " + weather, True, BLACK)
+    screen.blit(weather_text,(10,40))
+
+    dest_text = font.render("Destination: Green Circle", True, BLACK)
+    screen.blit(dest_text,(10,70))
+
+    obstacle_text = font.render("Obstacle: Building", True, BLACK)
+    screen.blit(obstacle_text,(10,100))
+
+    # Low battery
+    if battery < 20:
+        low = font.render("LOW BATTERY! Return Soon", True, RED)
+        screen.blit(low,(10,130))
+
+    # Bad weather
+    if weather != "Clear":
+        bad = font.render("BAD WEATHER! Drone Stopped", True, RED)
+        screen.blit(bad,(10,190))
+
+    # Delivery complete
+    if delivery_complete:
+        complete = bigfont.render("DELIVERY COMPLETED", True, BLUE)
+        screen.blit(complete,(250,300))
+
+    pygame.display.update()
+    clock.tick(60)
+
+pygame.quit()
